@@ -73,7 +73,7 @@ ai_gettext_translator translator ./locales --lang "es,it" --force
 Scans `.ex` files for `gettext("...")` strings and translates them inline to English. This is very useful if you've written your strings in different languages (or in another language).
 
 ```bash
-ai_gettext_translator inline-translator <folder> [OPTIONS]
+ai_gettext_translator inline <folder> [OPTIONS]
 ```
 
 #### Options:
