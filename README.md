@@ -1,6 +1,6 @@
 # 🧠 ai_gettext_translator
 
-**ai_gettext_translator** is a command-line tool that uses OpenAI’s models to automatically translate `gettext` messages in source code and `.po` files.
+A command-line tool that uses OpenAI’s models to automatically translate `gettext` messages in source code and `.po` files. Thought for Phoenix projects.
 
 ✨ It preserves `%{placeholders}`, supports plural forms, and logs with beautiful emoji & timestamps.
 

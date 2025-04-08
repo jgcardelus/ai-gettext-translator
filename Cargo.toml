@@ -1,5 +1,8 @@
 [package]
 name = "ai_gettext_translator"
+authors = ["Jorge Gonzalez Cardelus <jgcardelus@gmail.com>"]
+description = "A command-line tool that uses OpenAI’s models to automatically translate `gettext` messages in source code and `.po` files. Thought for Phoenix projects."
+license = "MIT"
 version = "0.1.0"
 edition = "2024"
 
