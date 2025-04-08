@@ -4,8 +4,6 @@
 
 ✨ It preserves `%{placeholders}`, supports plural forms, and logs with beautiful emoji & timestamps.
 
----
-
 ## 💡 What is it?
 
 This tool automates the translation process of your `gettext` strings using OpenAI's LLMs. It supports:
@@ -15,8 +13,6 @@ This tool automates the translation process of your `gettext` strings using Open
 - 🛡️ Placeholders like `%{name}` are preserved.
 - 🧪 Dry-run and 🔁 force modes for full control.
 - 📜 Beautiful, timestamped, logging of changes.
-
----
 
 ## ✨ Getting Started
 
@@ -28,15 +24,11 @@ If you haven't already:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
----
-
 ### 2. Install the tool
 
 ```bash
 cargo install ai_gettext_translator
 ```
-
----
 
 ### 3. Set your OpenAI API key
 
@@ -47,8 +39,6 @@ export OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxx
 ```
 
 Or pass it directly to any command using `--api-key`.
-
----
 
 ### 4. Translate your `.po` files (example)
 
@@ -76,8 +66,6 @@ ai_gettext_translator translator ./locales --lang "es,it" --force
 
 (Note: You can also use `--dry-run` to preview what would be translated, but without modifying any files.)
 
----
-
 ## 🧪 Commands
 
 ### 🔠 `inline`
@@ -95,8 +83,6 @@ ai_gettext_translator inline-translator <folder> [OPTIONS]
 | `--dry-run` | Preview changes without modifying files |
 | `--api-key` | Use a specific OpenAI API key           |
 
----
-
 ### 🌍 `translator`
 
 Translates `.po` files found in subfolders named by ISO language codes (e.g. `es/`, `it/`).
@@ -113,8 +99,6 @@ ai_gettext_translator translator <folder> --lang <langs> [OPTIONS]
 | `--dry-run` | Show what would be translated, but don’t modify files        |
 | `--force`   | Re-translate entries that already have translations          |
 | `--api-key` | Use a specific OpenAI API key                                |
-
----
 
 ## 🤝 Collaborate
 
