@@ -104,7 +104,7 @@ ai_gettext_translator translator <folder> --lang <langs> [OPTIONS]
 
 This project is open source and contributions are welcome!
 
-- 🐞 Found a bug? [Open an issue](https://github.com/jgcardelus/ai_gettext_translator/issues)
+- 🐞 Found a bug? [Open an issue](https://github.com/jgcardelus/ai-gettext-translator/issues)
 - 🌱 Want to contribute? Fork the repo and send a PR!
 - 🗨️ Have ideas or feedback? Send them our way.
 
