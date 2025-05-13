@@ -11,10 +11,12 @@ pub async fn run(
     langs: &str,
     dry_run: bool,
     force: bool,
+    context: Option<PathBuf>,
     api_key: Option<String>,
 ) -> Result<()> {
     let openai = OpenAI::new(api_key);
     let lang_list: Vec<&str> = langs.split(',').map(|s| s.trim()).collect();
+    let context = load_context(&root, &context).await?;
 
     for lang in lang_list {
         let lang_path = root.join(lang);
@@ -30,7 +32,7 @@ pub async fn run(
         for entry in WalkDir::new(lang_path).into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
             if path.extension().map(|e| e == "po").unwrap_or(false) {
-                process_po_file(&openai, &path, lang, dry_run, force).await?;
+                process_po_file(&openai, &path, lang, &context, dry_run, force).await?;
             }
         }
     }
@@ -38,11 +40,28 @@ pub async fn run(
     Ok(())
 }
 
+async fn load_context(root: &PathBuf, context: &Option<PathBuf>) -> Result<Option<String>> {
+    let context = match context.as_ref() {
+        Some(path) => path,
+        None => &root.join("context.txt"),
+    };
+
+    if !context.exists() || !context.is_file() {
+        return Ok(None);
+    }
+
+    match fs::read_to_string(context) {
+        Ok(content) => Ok(Some(content)),
+        Err(e) => Err(anyhow::anyhow!("Error reading context file: {}", e)),
+    }
+}
+
 /// Process a single .po file: read it, translate missing strings, write or dry-run
 async fn process_po_file(
     openai: &OpenAI,
     path: &Path,
     lang: &str,
+    context: &Option<String>,
     dry_run: bool,
     force: bool,
 ) -> Result<()> {
@@ -55,12 +74,12 @@ async fn process_po_file(
     while i < lines.len() {
         if is_msgid(&lines[i]) {
             if let Some(result) =
-                try_translate_singular(&mut lines, i, openai, lang, dry_run, force).await?
+                try_translate_singular(&mut lines, i, openai, lang, context, dry_run, force).await?
             {
                 changes += result;
                 i += 2;
             } else if let Some(result) =
-                try_translate_plural(&mut lines, i, openai, lang, dry_run, force).await?
+                try_translate_plural(&mut lines, i, openai, lang, context, dry_run, force).await?
             {
                 changes += result;
                 i += 4;
@@ -102,6 +121,7 @@ async fn try_translate_singular(
     i: usize,
     openai: &OpenAI,
     lang: &str,
+    context: &Option<String>,
     dry_run: bool,
     force: bool,
 ) -> Result<Option<usize>> {
@@ -113,7 +133,7 @@ async fn try_translate_singular(
     let msgstr = extract_po_string(&lines[i + 1])?;
 
     if msgstr.is_empty() || force {
-        let translated = translate_msg(openai, &msgid, lang).await?;
+        let translated = translate_msg(openai, &msgid, lang, context).await?;
         log_change(&msgid, &translated, lang, dry_run);
         lines[i + 1] = format!("msgstr \"{}\"", translated);
         Ok(Some(1))
@@ -129,6 +149,7 @@ async fn try_translate_plural(
     i: usize,
     openai: &OpenAI,
     lang: &str,
+    context: &Option<String>,
     dry_run: bool,
     force: bool,
 ) -> Result<Option<usize>> {
@@ -145,7 +166,7 @@ async fn try_translate_plural(
     let msgstr1 = extract_po_string(&lines[i + 3])?;
 
     if msgstr0.is_empty() || msgstr1.is_empty() || force {
-        let translated = translate_msg(openai, &msgid_plural, lang).await?;
+        let translated = translate_msg(openai, &msgid_plural, lang, context).await?;
         log_change(&msgid_plural, &translated, lang, dry_run);
         lines[i + 2] = format!("msgstr[0] \"{}\"", translated);
         lines[i + 3] = format!("msgstr[1] \"{}\"", translated);
@@ -166,30 +187,52 @@ fn extract_po_string(line: &str) -> Result<String> {
 
     Ok(line[quote_start + 1..quote_end].to_string())
 }
-async fn translate_msg(openai: &OpenAI, msg: &str, iso_code: &str) -> Result<String> {
+async fn translate_msg(
+    openai: &OpenAI,
+    msg: &str,
+    iso_code: &str,
+    context: &Option<String>,
+) -> Result<String> {
     let language = iso_to_name(iso_code);
     let instructions = format!(
         "You are a professional translator for gettext messages. You will translate the message to {}. You must preserve placeholder, written in the format `%{{placeholder}}`.",
         language
     );
-    let prompt = build_translation_prompt(msg, language);
+    let prompt = build_translation_prompt(msg, language, context);
 
     let req = AiRequest::new(instructions, prompt);
     openai.send(req).await
 }
 
-fn build_translation_prompt(input: &str, lang: &str) -> String {
-    format!(
-        "Translate this gettext message to {}, preserving placeholders like `%{{...}}`.
+fn build_translation_prompt(input: &str, lang: &str, context: &Option<String>) -> String {
+    let mut prompt = format!(
+        "Translate this gettext message to {}, preserving placeholders like `%{{...}}`. ",
+        lang
+    );
 
-		Important:
+    if let Some(_context) = context {
+        prompt.push_str(&format!(
+            "Use the context provided to guide your translations."
+        ));
+    }
+
+    prompt.push_str(&format!(
+        "\n\n
+    Important:
 		- If it's already in {}, just return the original text.
 		- Just return the translation, do not add any other text or comments.
 
-		Text to translate:
-		\"{}\"",
-        lang, lang, input
-    )
+    ",
+        lang
+    ));
+
+    if let Some(context) = context {
+        prompt.push_str(&format!("Context:\n{}\n\n", context));
+    }
+
+    prompt.push_str(&format!("Text to translate:\n\"{}\"", input));
+
+    prompt
 }
 
 fn iso_to_name(code: &str) -> &'static str {

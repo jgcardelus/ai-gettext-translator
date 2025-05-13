@@ -42,6 +42,10 @@ enum Commands {
         #[arg(long)]
         force: bool,
 
+        /// Extra context for the prompt. If not set, the program will look for a file named context.txt in the root folder
+        #[arg(long)]
+        context: Option<std::path::PathBuf>,
+
         /// API Key
         #[arg(long)]
         api_key: Option<String>,
@@ -65,9 +69,10 @@ async fn main() -> anyhow::Result<()> {
             lang,
             dry_run,
             force,
+            context,
             api_key,
         } => {
-            translator::run(folder, &lang, dry_run, force, api_key).await?;
+            translator::run(folder, &lang, dry_run, force, context, api_key).await?;
         }
     }
 
